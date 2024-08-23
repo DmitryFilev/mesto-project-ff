@@ -32,6 +32,8 @@ cardsContainer.addEventListener('click', clickCard);
 btnAddCard.addEventListener('click', function(){//вызов модального окна добавления карточки
     document.addEventListener('click', closeModal);
     document.addEventListener('keydown', closeModal);
+    namePlaceCard.value=''; //очищаем поля, могут остаться данные при выходе предыдущего сеанса без сохранения
+    linkPlaceCard.value = '';
     openModal(popupAddCard);
     });
 frmAddCard.addEventListener('submit', submitAddCard); //Подключение листнера к модальному окну добавления карточки
