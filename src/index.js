@@ -1,6 +1,6 @@
 
 import './pages/index.css';
-import {createCard, clickCard} from './components/card.js';
+import {createCard} from './components/card.js';
 import {initialCards} from './components/cards.js';
 import {openModal, closeModal} from './components/modal.js';
 const cardsContainer = document.querySelector('.places__list');
@@ -17,49 +17,88 @@ const frmAddCard = document.forms['new-place'];
 const namePlaceCard =  frmAddCard['place-name'];
 const linkPlaceCard =  frmAddCard['link'];
 const classModalWin = 'popup'
+const classBtnClose = 'popup__close'
 const classIsOpen = 'popup_is-opened';
 const classIsAnimate = 'popup_is-animated';
-const classClickClose = ['popup_is-opened', 'popup__close', 'popup__button'];
 const keysClosePopup = ['Escape'];
-const addListnerCloseModal =  document.addEventListener('keydown', closeModal);document.addEventListener('click', closeModal);
-const removeListnerCloseModal =  document.removeEventListener('keydown', closeModal);document.removeEventListener('click', closeModal);
-document.querySelectorAll(classModalWin).forEach ( element => element.classList.add(classIsAnimate)); //придадим плавность модальным окнам
+const likeAct = 'card__like-button_is-active';
+const popupView = document.querySelector('.popup_type_image');
+const popupViewImg = document.querySelector('.popup__image');
+const popupViewCaption = document.querySelector('.popup__caption');
+const tmpObj={
+    id: 'card-template',
+    core: 'places__item',
+    title: 'card__title',
+    del: 'card__delete-button',
+    like: 'card__like-button',
+    img: 'card__image',
+}
+//добавляем обработчики закрытия и плавность модальным окнам
+document.querySelectorAll('.'+classModalWin).forEach ( element => {
+    element.classList.add(classIsAnimate);
+    element.addEventListener('click', handleCloseClickPopup);
+    element.querySelector('.'+classBtnClose).addEventListener('click',  handleCloseclickX);
+ })
 //начальное заполнение карточек
-initialCards.forEach ( element => cardsContainer.append(createCard(element.name, element.link)));
-//работа с картой (подвешиваем листнер над контейнером, чтобы не плодить листнеры на картах. используем "всплытие событий")
-cardsContainer.addEventListener('click', clickCard);
-//добавление карточки
-btnAddCard.addEventListener('click', function(){//вызов модального окна добавления карточки
-    document.addEventListener('click', closeModal);
-    document.addEventListener('keydown', closeModal);
-    namePlaceCard.value=''; //очищаем поля, могут остаться данные при выходе предыдущего сеанса без сохранения
+initialCards.forEach ( element => cardsContainer.append(createCard(element.name, element.link, tmpObj, clickLikeBtnCard, clickDeleteBtnCard, clickImageCard)));
+//Подключение листнеров вызова модальных окон
+btnAddCard.addEventListener('click', function(){
+    //очищаем поля, могут остаться данные при выходе предыдущего сеанса без сохранения
+    namePlaceCard.value=''; 
     linkPlaceCard.value = '';
-    openModal(popupAddCard);
+    document.addEventListener('keydown', handleCloseKeyDown);
+    openModal(popupAddCard, classIsOpen);
     });
-frmAddCard.addEventListener('submit', submitAddCard); //Подключение листнера к модальному окну добавления карточки
-//редактирование профиля
-btnEditProfile.addEventListener('click', function(){//вызов модального окна редактирования профиля
+btnEditProfile.addEventListener('click', function(){
     nameProfile.value = profileTitle.textContent;
     descrProfile.value = profileDescr.textContent; 
-    document.addEventListener('click', closeModal);
-    document.addEventListener('keydown', closeModal);
-    openModal(popupEditProfile); 
+    document.addEventListener('keydown', handleCloseKeyDown);
+    openModal(popupEditProfile,classIsOpen); 
     });
-frmEditProfile.addEventListener('submit', submitEditProfile);//Подключение листнера к модальному окну редактирования профиля
-
-
+//Подключение листнеров submit на формы модальных окон
+frmAddCard.addEventListener('submit', submitAddCard);    
+frmEditProfile.addEventListener('submit', submitEditProfile);
+//Обработчики submit форм модальных окон
 function submitAddCard(evt) {
     evt.preventDefault();
-    const newCard = createCard(namePlaceCard.value, linkPlaceCard.value);
+    const newCard = createCard(namePlaceCard.value, linkPlaceCard.value, tmpObj, clickLikeBtnCard, clickDeleteBtnCard, clickImageCard);
     namePlaceCard.value='';
     linkPlaceCard.value = '';
     cardsContainer.prepend(newCard);
+    closeModal(popupAddCard, classIsOpen);
+    document.removeEventListener('keydown', handleCloseKeyDown);
 };
 function submitEditProfile(evt) {
     evt.preventDefault();
     profileTitle.textContent = nameProfile.value;
-    profileDescr.textContent = descrProfile.value; 
+    profileDescr.textContent = descrProfile.value;
+    closeModal(popupEditProfile, classIsOpen);
+    document.removeEventListener('keydown', handleCloseKeyDown); 
 };
-
-
-export {classIsOpen, keysClosePopup, classClickClose, addListnerCloseModal, removeListnerCloseModal}
+//Обработчики элементов карточки
+function clickLikeBtnCard (evt){evt.target.classList.toggle(likeAct)};  
+function clickDeleteBtnCard (evt) {evt.target.parentNode.remove();};
+function clickImageCard (evt) {
+    popupViewImg.src = evt.target.src; 
+    popupViewImg.alt = evt.target.alt;
+    popupViewCaption.textContent = evt.target.parentNode.querySelector('.'+tmpObj.title).textContent;        
+    document.addEventListener('keydown', handleCloseKeyDown);
+    openModal(popupView, classIsOpen);
+};
+//Обработчики закрытия модальных окон
+function handleCloseKeyDown(evt){
+    if (keysClosePopup.some((elem) => elem === evt.key)) {
+        closeModal(document.querySelector('.' + classIsOpen), classIsOpen);
+        document.removeEventListener('keydown', handleCloseKeyDown);
+    };
+};
+function handleCloseClickPopup(evt) {
+    if (evt.target.classList.contains(classIsOpen)) {
+        closeModal(evt.target, classIsOpen);
+        document.removeEventListener('keydown', handleCloseKeyDown);
+    };  
+};
+function handleCloseclickX(evt) {
+    closeModal(evt.target.closest('.'+classIsOpen), classIsOpen);
+    document.removeEventListener('keydown', handleCloseKeyDown);
+};
