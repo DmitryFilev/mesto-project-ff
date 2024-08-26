@@ -20,8 +20,6 @@ const classModalWin = 'popup'
 const classBtnClose = 'popup__close'
 const classIsOpen = 'popup_is-opened';
 const classIsAnimate = 'popup_is-animated';
-const keysClosePopup = ['Escape'];
-const likeAct = 'card__like-button_is-active';
 const popupView = document.querySelector('.popup_type_image');
 const popupViewImg = document.querySelector('.popup__image');
 const popupViewCaption = document.querySelector('.popup__caption');
@@ -32,73 +30,53 @@ const tmpObj={
     del: 'card__delete-button',
     like: 'card__like-button',
     img: 'card__image',
+    likeAct: 'card__like-button_is-active',
 }
-//добавляем обработчики закрытия и плавность модальным окнам
+//добавление обработчиков закрытия и 'навешивание' класса плавности модальным окнам
 document.querySelectorAll('.'+classModalWin).forEach ( element => {
     element.classList.add(classIsAnimate);
     element.addEventListener('click', handleCloseClickPopup);
     element.querySelector('.'+classBtnClose).addEventListener('click',  handleCloseclickX);
  })
-//начальное заполнение карточек
-initialCards.forEach ( element => cardsContainer.append(createCard(element.name, element.link, tmpObj, clickLikeBtnCard, clickDeleteBtnCard, clickImageCard)));
 //Подключение листнеров вызова модальных окон
 btnAddCard.addEventListener('click', function(){
-    //очищаем поля, могут остаться данные при выходе предыдущего сеанса без сохранения
+    //очищение полей, в которых могут остаться данные при выходе из предыдущего сеанса без сохранения
     namePlaceCard.value=''; 
     linkPlaceCard.value = '';
-    document.addEventListener('keydown', handleCloseKeyDown);
     openModal(popupAddCard, classIsOpen);
     });
 btnEditProfile.addEventListener('click', function(){
     nameProfile.value = profileTitle.textContent;
     descrProfile.value = profileDescr.textContent; 
-    document.addEventListener('keydown', handleCloseKeyDown);
-    openModal(popupEditProfile,classIsOpen); 
+    openModal(popupEditProfile, classIsOpen); 
     });
 //Подключение листнеров submit на формы модальных окон
 frmAddCard.addEventListener('submit', submitAddCard);    
 frmEditProfile.addEventListener('submit', submitEditProfile);
+//начальное заполнение карточек
+initialCards.forEach ( element => cardsContainer.append(createCard(element.name, element.link, tmpObj, clickImageCard)));
 //Обработчики submit форм модальных окон
 function submitAddCard(evt) {
     evt.preventDefault();
-    const newCard = createCard(namePlaceCard.value, linkPlaceCard.value, tmpObj, clickLikeBtnCard, clickDeleteBtnCard, clickImageCard);
+    const newCard = createCard(namePlaceCard.value, linkPlaceCard.value, tmpObj, clickImageCard);
     namePlaceCard.value='';
     linkPlaceCard.value = '';
     cardsContainer.prepend(newCard);
-    closeModal(popupAddCard, classIsOpen);
-    document.removeEventListener('keydown', handleCloseKeyDown);
+    closeModal(popupAddCard, classIsOpen,);
 };
 function submitEditProfile(evt) {
     evt.preventDefault();
     profileTitle.textContent = nameProfile.value;
     profileDescr.textContent = descrProfile.value;
     closeModal(popupEditProfile, classIsOpen);
-    document.removeEventListener('keydown', handleCloseKeyDown); 
 };
-//Обработчики элементов карточки
-function clickLikeBtnCard (evt){evt.target.classList.toggle(likeAct)};  
-function clickDeleteBtnCard (evt) {evt.target.parentNode.remove();};
+//Обработчик клика на картинке карточки
 function clickImageCard (evt) {
     popupViewImg.src = evt.target.src; 
     popupViewImg.alt = evt.target.alt;
     popupViewCaption.textContent = evt.target.parentNode.querySelector('.'+tmpObj.title).textContent;        
-    document.addEventListener('keydown', handleCloseKeyDown);
     openModal(popupView, classIsOpen);
 };
-//Обработчики закрытия модальных окон
-function handleCloseKeyDown(evt){
-    if (keysClosePopup.some((elem) => elem === evt.key)) {
-        closeModal(document.querySelector('.' + classIsOpen), classIsOpen);
-        document.removeEventListener('keydown', handleCloseKeyDown);
-    };
-};
-function handleCloseClickPopup(evt) {
-    if (evt.target.classList.contains(classIsOpen)) {
-        closeModal(evt.target, classIsOpen);
-        document.removeEventListener('keydown', handleCloseKeyDown);
-    };  
-};
-function handleCloseclickX(evt) {
-    closeModal(evt.target.closest('.'+classIsOpen), classIsOpen);
-    document.removeEventListener('keydown', handleCloseKeyDown);
-};
+//обработчики закрытия модальных окон по клику
+function handleCloseClickPopup(evt) {if (evt.target.classList.contains(classIsOpen)) {closeModal(evt.target, classIsOpen);};};
+function handleCloseclickX(evt) {closeModal(evt.target.closest('.'+classIsOpen), classIsOpen);};
