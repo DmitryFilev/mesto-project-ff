@@ -1,3 +1,6 @@
 .popup__form {
   margin-top: 27px;
 }
+.popup_type_del-card .popup__form {
+  margin-top: 5px;
+}

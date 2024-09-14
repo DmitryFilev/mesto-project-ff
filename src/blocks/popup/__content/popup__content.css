@@ -17,3 +17,6 @@
     padding: 30px 20px;
   }
 }
+.popup_type_del-card .popup__content {
+  min-height: 50px;
+}
