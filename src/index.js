@@ -1,6 +1,6 @@
 import './pages/index.css';
 import {createCard} from './components/card.js';
-import {queryServer} from './components/api.js';
+import {getProfile, getInitialCards, putCard, delCard, patchProfile, patchAvatar, delLike, putLike} from './components/api.js';
 import {openModal, closeModal} from './components/modal.js';
 import {enableValidation, clearValidation} from './components/validation.js';
 const cardsContainer = document.querySelector('.places__list');
@@ -44,61 +44,34 @@ const popupDelCard = document.querySelector('.popup_type_del-card');
 const popupEditAvatar = document.querySelector('.popup_type_edit-avatar');
 const contentErrorMess ='Разрешены только латинские, кириллические буквы, знаки дефиса и пробелы';
 let idMe ='1';
-const configFetch = {
-  baseUrl: 'https://mesto.nomoreparties.co/v1/pwff-cohort-1',
-  headers: {
-    authorization: 'c0633bfb-20c9-4f83-879b-8806458fc25b',
-    'Content-Type': 'application/json'
-    }
-}
-const sizeField = [
-    [inpNameProfile, 2, 40],
-    [inpDescrProfile, 2, 200],
-    [inpNamePlaceCard, 2, 30]
-    ];
-const mainPattern = "[A-z А-яё\\-]+";
-const patternField = [
-    [inpNameProfile, mainPattern],
-    [inpDescrProfile, mainPattern],
-    [inpNamePlaceCard, mainPattern]
-]      
 const validationConfig = {
-    formSelector: classForm,
-    inputSelector: classInput,
-    submitButtonSelector: classBtnSubmit,
+    formSelector: `.${classForm}`,
+    inputSelector: `.${classInput}`,
+    submitButtonSelector: `.${classBtnSubmit}`,
     inactiveButtonClass: classDisableBtn,
     inputErrorClass: classInputError,
     errorClass: classErrorLine,
     errorClassVisible: classVisibleError,
     errorMess: contentErrorMess,
   }
-//Функции получение начальных данных с сервера
-const loadUserData = () => {return queryServer(configFetch, 'users/me', 'GET')};
-const loadCardsData = () => {return queryServer(configFetch, 'cards', 'GET')};
-//Функция перезагрузки карточек
-const reloadCards = () => loadCardsData()
-.then(result => {
-  Array.from(cardsContainer.querySelectorAll(`.${classCard}`)).forEach (element => element.remove());
-  fillCards(result)})
-  .catch(err => alert(`Ошибка перезагрузки карт-${err}`));
-
 //функция заполнения профиля
-const fillProfil = (data) =>{
+const fillProfile = (data) =>{
   profileTitle.textContent = data.name;
   profileDescr.textContent = data.about;
   profileImg.style = `background-image: url('${data.avatar}');"`;
   idMe = data._id;
 };
 //Функция Заполнения карточек
-const fillCards = (data) =>  data.forEach(element => cardsContainer.append(createCard(element, configCard, idMe )));
+const fillCards = (data, method) =>  data.forEach(element => cardsContainer[method](createCard(element, configCard, idMe )));
+
 //Обработчики submit форм модальных окон
 const submitAddCard = (evt) => {
     evt.preventDefault();
     toggleTextSubmit(evt);
-    queryServer(configFetch, 'cards', 'POST', {name: inpNamePlaceCard.value, link: inpLinkPlaceCard.value})
+    putCard(inpNamePlaceCard.value, inpLinkPlaceCard.value)
       .then(result => {
         alert(`Карточка ${result.name} добавлена`);
-        reloadCards();
+        fillCards([result],'prepend');
         toggleTextSubmit(evt);
         closeModal(popupAddCard, classIsOpen);
       })
@@ -107,22 +80,23 @@ const submitAddCard = (evt) => {
 
 const submitDelCard = (evt) => {
     evt.preventDefault();
-    const idCard = popupDelCard.id.slice(3);
-    queryServer(configFetch, `cards/${idCard}`, 'DELETE', '')
-        .then(result => { 
-          alert(result.message);
-          reloadCards();
-          closeModal(popupDelCard, classIsOpen);
-         })
+    const cardForDel = cardsContainer.querySelector(`#${popupDelCard.id}`)
+    const idCard = popupDelCard.id.slice(3);//приходится добавлять буквенный префикс в id, так как id тега дожен начинаться с латинской буквы иначе возникает ошибка "is not a valid selector"
+    delCard( idCard)
+      .then(result => { 
+        alert(result.message);
+        cardForDel.remove();
+        closeModal(popupDelCard, classIsOpen);
+      })
          .catch(err => alert(`Ошибка удаления карты-${err}`));
     };
 
 const submitEditProfile = (evt) => {
     evt.preventDefault();
     toggleTextSubmit(evt);
-    queryServer(configFetch, 'users/me', 'PATCH', {name: inpNameProfile.value, about: inpDescrProfile.value})
+    patchProfile(inpNameProfile.value, inpDescrProfile.value)
       .then(result => {
-        fillProfil(result);
+        fillProfile(result);
         toggleTextSubmit(evt);
         closeModal(popupEditProfile, classIsOpen);
       })
@@ -132,9 +106,9 @@ const submitEditProfile = (evt) => {
 const submitEditAvatar = (evt) => {
   evt.preventDefault();
   toggleTextSubmit(evt);
-  queryServer(configFetch, 'users/me/avatar', 'PATCH', {avatar: inpLinkAvatar.value})
+  patchAvatar(inpLinkAvatar.value)
     .then(result => {
-      fillProfil(result);
+      fillProfile(result);
       toggleTextSubmit(evt);
       closeModal(popupEditAvatar, classIsOpen);
     })
@@ -164,17 +138,15 @@ const delCardOwn = (idCard) => {
 const likeCard = (btnLikeCard) =>{
     const card = btnLikeCard.closest(`.${classCard}`);
     const isLikeCard = btnLikeCard.classList.contains(classIsLike);
-    const idCard = card.id.slice(3);
+    const idCard = card.id.slice(3);//приходится добавлять буквенный префикс в id, так как id тега дожен начинаться с латинской буквы иначе возникает ошибка "is not a valid selector"
     if (isLikeCard) {
-      btnLikeCard.classList.remove(classIsLike);
-      queryServer(configFetch, `cards/likes/${idCard}`, 'DELETE', '')       
-        .then(result => handlLike(result))
+      delLike(idCard)
+        .then(result => handlLike(result, btnLikeCard))
         .catch(err => alert(`Ошибка удаления like-${err}`));
     }
     else {
-      btnLikeCard.classList.add(classIsLike);
-      queryServer(configFetch, `cards/likes/${idCard}`, 'PUT', '')         
-        .then(result => handlLike(result))
+      putLike(idCard)
+        .then(result => handlLike(result, btnLikeCard))
         .catch(err => alert(`Ошибка проставления like-${err}`));
     };
 }
@@ -212,15 +184,14 @@ const clickEditProfile = () => {
   openModal(popupEditProfile, classIsOpen); 
 };
 //Вспомогательные функции
-const handlLike = (answerArray) => {
+const handlLike = (answerArray, likeBtn) => {
   const idCard = answerArray._id;
   const countLike = answerArray.likes.length;
   const isMyLike = answerArray.likes.some((element) => {return element._id === idMe;});
   const card = document.querySelector(`#id_${idCard}`);
-  const likeBtn = card.querySelector(`.${classBtnLike}`);
+  //const likeBtn = card.querySelector(`.${classBtnLike}`);
   card.querySelector(`.${classCountLike}`).textContent = countLike; 
-  if (isMyLike) {likeBtn.classList.add(classIsLike);}
-  else {likeBtn.classList.remove(classIsLike);}
+  likeBtn.classList.toggle(classIsLike, isMyLike)
   return [idCard, countLike, isMyLike];
 };
 
@@ -231,7 +202,7 @@ if (text.slice(-3) === '...') {btn.textContent = text.slice(0,-3)}
 else {btn.textContent = text+'...'};
   };
 //Настройка валидации
-enableValidation(validationConfig, sizeField, patternField); 
+enableValidation(validationConfig); 
 //Добавление обработчиков закрытия и 'навешивание' класса плавности модальным окнам
 document.querySelectorAll('.'+classModalWin).forEach ( element => {
     element.classList.add(classIsAnimate);
@@ -249,10 +220,10 @@ frmEditProfile.addEventListener('submit', submitEditProfile);
 frmEditAvatar.addEventListener('submit', submitEditAvatar)
 
 //Ожидание выполнения запросов и заполнение полей документа
-Promise.all([loadUserData(), loadCardsData()])
-  .then((result) => {
-    fillProfil(result[0]);
-    fillCards(result[1]);
+Promise.all([getProfile(), getInitialCards()])
+  .then(([profile,cards]) => {
+    fillProfile(profile);
+    fillCards(cards, 'append');
   })
   .catch(err => alert(`Ошибка начальной загрузки-${err}`));
 ;

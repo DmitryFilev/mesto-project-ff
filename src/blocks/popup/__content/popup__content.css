@@ -20,3 +20,7 @@
 .popup_type_del-card .popup__content {
   min-height: 50px;
 }
+
+.popup_type_edit-avatar .popup__content {
+  min-height: 275px;
+}
