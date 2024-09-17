@@ -1,7 +1,7 @@
 const config = {
     baseUrl: 'https://mesto.nomoreparties.co/v1/pwff-cohort-1',
     headers: {
-      authorization: 'c0633bfb-20c9-4f83-879b-8806458fc25b',
+      authorization: '11111111111111111',
       'Content-Type': 'application/json'
       }
   }
